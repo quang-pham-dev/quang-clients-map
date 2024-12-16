@@ -47,7 +47,6 @@ This application serves as a visual representation of my professional network, h
 
 - [ESLint](https://eslint.org/) (v9)
 - [react-scan](https://www.npmjs.com/package/react-scan) (v0.0.46)
-- [react-error-boundary](https://github.com/bvaughn/react-error-boundary) (v4.1.2)
 
 ## Getting Started
 
