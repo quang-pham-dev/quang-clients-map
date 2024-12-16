@@ -1,0 +1,6 @@
+export const MAP_CONSTANTS = {
+  MAKER_RADIUS: 2,
+  ROTATION_SPEED: 0.001,
+  CAMERA_POSITION: [0, 0, 6],
+  CAMERA_FOV: 60
+};
