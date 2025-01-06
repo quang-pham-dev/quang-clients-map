@@ -1,30 +1,42 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, memo } from "react";
 import * as THREE from "three";
 import { useLoader } from "@react-three/fiber";
 
 import { useGlobeRotation } from "@/hooks/use-globe-rotation";
 import { globeMap } from "@/constants/assets";
 import { MAP_CONSTANTS } from "@/constants/map";
-import { Marker } from "@/components/clients-map/maker";
-import { Cluster } from "@/interfaces/cluster";
-import { Location } from "@/interfaces/location";
 import { clusteredLocations } from "@/lib/helpers";
+import { Marker } from "@/components/clients-map/maker";
+
+import { Cluster } from "@/interfaces/cluster";
+import type { Location as MapLocation } from "@/interfaces/location";
+
+// Pre-initialize shared geometries and materials
+const sphereGeometry = new THREE.SphereGeometry(
+  MAP_CONSTANTS.MAKER_RADIUS,
+  64,
+  64
+);
 
 interface LocationsProps {
-  locations: Location[];
+  locations: MapLocation[];
   onSelectClusterAction: (cluster: Cluster | null) => void;
 }
 
-export function Locations({
+export const Locations = memo(function Locations({
   locations,
   onSelectClusterAction
 }: LocationsProps) {
   const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null);
   const { locationsRef, markersRef, setIsRotating } = useGlobeRotation();
 
+  // Optimize texture loading
   const earthTexture = useLoader(THREE.TextureLoader, globeMap.src);
+  earthTexture.generateMipmaps = false;
+  earthTexture.minFilter = THREE.LinearFilter;
+
   const clusteredLocationsMemo = useMemo(
     () => clusteredLocations(locations),
     [locations]
@@ -37,7 +49,6 @@ export function Locations({
           prevSelected === clickedCluster ? null : clickedCluster;
         setIsRotating(!newSelected);
         onSelectClusterAction(newSelected);
-
         return newSelected;
       });
     },
@@ -50,16 +61,22 @@ export function Locations({
     onSelectClusterAction(null);
   }, [onSelectClusterAction, setIsRotating]);
 
+  const globeMaterial = useMemo(
+    () => new THREE.MeshStandardMaterial({ map: earthTexture }),
+    [earthTexture]
+  );
+
   return (
     <group onClick={handleGlobeClick}>
-      <mesh ref={locationsRef}>
-        <sphereGeometry args={[MAP_CONSTANTS.MAKER_RADIUS, 64, 64]} />
-        <meshStandardMaterial map={earthTexture} />
-      </mesh>
+      <mesh
+        ref={locationsRef}
+        geometry={sphereGeometry}
+        material={globeMaterial}
+      />
       <group ref={markersRef}>
         {clusteredLocationsMemo.map((cluster, index) => (
           <Marker
-            key={index}
+            key={`${cluster.lat}-${cluster.lng}-${index}`}
             marker={cluster}
             makerRadius={MAP_CONSTANTS.MAKER_RADIUS}
             isSelected={selectedCluster === cluster}
@@ -69,4 +86,4 @@ export function Locations({
       </group>
     </group>
   );
-}
+});
